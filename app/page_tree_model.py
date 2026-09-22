@@ -219,6 +219,13 @@ class ProjectNode(Node):
         return "folder"
 
 
+def get_project(node: Node):
+    if node.node_type == "folder":
+        return node
+
+    assert node.parent
+    return get_project(node.parent)
+
 def build_node(node_type: str, name: str, parent: Node) -> Node:
     id = str(uuid4())
     path = parent.path / "children" / id
@@ -364,11 +371,7 @@ class PageTreeModel(QAbstractItemModel):
 
     @Slot(str, str)
     def add_node(self, name: str = "Untitled", node_type: str = "page"):
-        if self.current is not None and self.current.node_type == "folder":
-            parent = self.current
-
-        else:
-            parent = self._root
+        parent = get_project(self.current)
 
         parent_index = self.index_for_node(parent)
         row = parent.child_count()
@@ -376,7 +379,9 @@ class PageTreeModel(QAbstractItemModel):
         node = build_node(node_type, name, parent)
         self.endInsertRows()
 
-        self.currentIndexChanged.emit(self.index_for_node(node))
+        new_index = self.index_for_node(node)
+        self.set_current(new_index)
+        self.currentIndexChanged.emit(new_index)
 
     # ------------------------------------------------------------------
     # QAbstractItemModel 标准接口

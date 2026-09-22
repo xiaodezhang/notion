@@ -64,15 +64,35 @@ Rectangle {
         // 快捷入口
         Column {
             Layout.fillWidth: true
+            Layout.bottomMargin: 6
             Layout.topMargin: 4
             Layout.leftMargin: 8
             Layout.rightMargin: 8
             spacing: 1
 
-            SidebarAction { width: parent.width; iconName: "search"; label: "搜索" }
-            SidebarAction { width: parent.width; iconName: "inbox"; label: "收件箱" }
-            SidebarAction { width: parent.width; iconName: "settings"; label: "设置" }
+            SidebarAction {
+              width: parent.width
+              iconName: "trash"
+              label: "回收站" 
+            }
+            SidebarAction { 
+              width: parent.width 
+              iconName: "plus" 
+              label: "新建页面" 
+              onClicked: {
+                pageTreeModel.add_node("Untitled", "page")
+              }
+            }
+            SidebarAction { 
+              width: parent.width 
+              iconName: "folder-plus" 
+              label: "新建项目" 
+              onClicked: {
+                pageTreeModel.add_node("Project", "folder")
+              }
+            }
         }
+
 
         Item { Layout.preferredHeight: 8 }
 
@@ -122,6 +142,7 @@ Rectangle {
               target: pageTreeModel
               function onCurrentIndexChanged(index) {
                 treeSelectionModel.setCurrentIndex(index, ItemSelectionModel.ClearAndSelect)
+                treeView.expandToIndex(index)
               }
             }
 
@@ -219,33 +240,17 @@ Rectangle {
         // 底部操作
         Column {
             Layout.fillWidth: true
-            Layout.bottomMargin: 6
             Layout.topMargin: 4
             Layout.leftMargin: 8
             Layout.rightMargin: 8
             spacing: 1
 
-            SidebarAction {
-              width: parent.width
-              iconName: "trash"
-              label: "回收站" 
-            }
-            SidebarAction { 
-              width: parent.width 
-              iconName: "plus" 
-              label: "新建页面" 
-              onClicked: {
-                pageTreeModel.add_node("Untitled", "page")
-              }
-            }
-            SidebarAction { 
-              width: parent.width 
-              iconName: "folder-plus" 
-              label: "新建项目" 
-              onClicked: {
-                pageTreeModel.add_node("Project", "folder")
-              }
-            }
+            SidebarAction { width: parent.width; iconName: "search"; label: "搜索" }
+            SidebarAction { width: parent.width; iconName: "inbox"; label: "收件箱" }
+            SidebarAction { width: parent.width; iconName: "settings"; label: "设置" }
         }
+
+
+
     }
 }

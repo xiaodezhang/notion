@@ -24,9 +24,21 @@ ApplicationWindow {
 
         }
     }
+    // Main.qml 里
+    CreateProjectPage {
+      id: createProjectPage
+      anchors.fill: parent
+      visible: false
+
+      onCancelled: visible = false
+      onCreateRequested: (name, description, colorName) => {
+        pageTreeModel.create_project(name, description, colorName)
+        visible = false
+      }
+    }
 
     Shortcut {
       sequences: [StandardKey.Paste]   // 或者 "Ctrl+V"
       onActivated: pageTreeModel.paste_files()
     }
-}
+  }
