@@ -69,6 +69,7 @@ class Node:
         self.name = name
         self.path = path
         self.parent: "Node | None" = parent
+        self.expanded = True
         self.children: list["Node"] = []
 
         path.mkdir(parents=True, exist_ok=True)
@@ -90,6 +91,7 @@ class Node:
                 "id": self.id,
                 "name": self.name,
                 "node_type": self.node_type,
+                "expanded": self.expanded,
                 "children": [x.id for x in self.children],
             },
         )
@@ -201,20 +203,6 @@ class PageNode(Node):
         for x in to_move_resources:
             shutil.copy(self.path / x, self.html_folder / x)
 
-    def save(self):
-        for c in self.children:
-            c.save()
-
-        write_json(
-            self.path / "meta.json",
-            {
-                "id": self.id,
-                "name": self.name,
-                "node_type": self.node_type,
-                "children": [x.id for x in self.children],
-            },
-        )
-
 
 class ProjectNode(Node):
     def __init__(
@@ -234,7 +222,7 @@ class ProjectNode(Node):
 def build_node(node_type: str, name: str, parent: Node) -> Node:
     id = str(uuid4())
     path = parent.path / "children" / id
-    node = _build_node(node_type, id, name, path, parent)
+    node = _build_node(node_type, id, name, path, True, parent)
 
     return node
 
@@ -249,6 +237,7 @@ def build_from_file(file: Path, parent: Node | None = None):
         meta_json["id"],
         meta_json["name"],
         file,
+        meta_json["expanded"],
         parent,
     )
 
@@ -259,13 +248,20 @@ def build_from_file(file: Path, parent: Node | None = None):
 
 
 def _build_node(
-    node_type: str, id: str, name: str, path: Path, parent: "Node | None" = None
+    node_type: str,
+    id: str,
+    name: str,
+    path: Path,
+    expanded: bool,
+    parent: Node | None = None,
 ):
     if node_type == "page":
         node = PageNode(id, name, path, parent)
 
     else:
         node = ProjectNode(id, name, path, parent)
+
+    node.expanded = expanded
 
     if parent is not None:
         parent.append_child(node)
@@ -278,6 +274,7 @@ class PageTreeModel(QAbstractItemModel):
 
     currentChanged = Signal()
     currentIndexChanged = Signal(QModelIndex)
+    request_expand_all = Signal(list)  # 传一批需要展开的 QModelIndex
 
     NodeTypeRole = Qt.ItemDataRole.UserRole + 1
 
@@ -309,8 +306,29 @@ class PageTreeModel(QAbstractItemModel):
             return
 
         if isinstance(self.current, PageNode):
-            self.current.paste_files([Path(url.toLocalFile()) for url in mime_data.urls()])
+            self.current.paste_files(
+                [Path(url.toLocalFile()) for url in mime_data.urls()]
+            )
         self.currentChanged.emit()
+
+    @Slot(QModelIndex, bool)
+    def set_expanded(self, index: QModelIndex, expanded: bool):
+        node = index.internalPointer()
+        if node:
+            node.expanded = expanded
+
+    @Slot(result="QVariantList")
+    def get_expanded_indexes(self) -> list[QModelIndex]:
+        result = []
+        self._collect_expanded(self._root, QModelIndex(), result)
+        return result
+
+    def _collect_expanded(self, node: Node, parent_index: QModelIndex, result: list):
+        for i, child in enumerate(node.children):
+            if child.expanded:
+                child_index = self.index(i, 0, parent_index)
+                result.append(child_index)
+                self._collect_expanded(child, child_index, result)
 
     def _check_file(self):
         if isinstance(self.current, PageNode):

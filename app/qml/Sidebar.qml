@@ -96,6 +96,23 @@ Rectangle {
             model: pageTreeModel
             boundsBehavior: Flickable.StopAtBounds
 
+            Component.onCompleted: {
+              Qt.callLater(() => {
+                var indexes = pageTreeModel.get_expanded_indexes()
+                for (var i = 0; i < indexes.length; i++) {
+                  treeView.expandToIndex(indexes[i])
+                }
+              })
+            }
+
+            onExpanded: (row, depth) => {
+              pageTreeModel.set_expanded(treeView.index(row, 0), true)
+            }
+
+            onCollapsed: (row, depth) => {
+              pageTreeModel.set_expanded(treeView.index(row, 0), false)
+            }
+
             selectionModel: ItemSelectionModel {
               id: treeSelectionModel
               model: pageTreeModel
