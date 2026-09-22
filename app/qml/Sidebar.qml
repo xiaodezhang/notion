@@ -88,7 +88,7 @@ Rectangle {
               iconName: "folder-plus" 
               label: "新建项目" 
               onClicked: {
-                pageTreeModel.add_node("Project", "folder")
+                createProjectPage.visible = true
               }
             }
         }

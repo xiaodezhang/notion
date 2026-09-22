@@ -32,7 +32,7 @@ ApplicationWindow {
 
       onCancelled: visible = false
       onCreateRequested: (name, description, colorName) => {
-        pageTreeModel.create_project(name, description, colorName)
+        pageTreeModel.add_node(name, "folder")
         visible = false
       }
     }
