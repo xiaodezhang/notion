@@ -23,15 +23,10 @@ from PySide6.QtGui import QGuiApplication
 from platformdirs import user_data_dir, user_data_path
 from uuid import uuid4
 from loguru import logger
-
-
 import shutil
 import re
 import hashlib
 from loguru import logger
-from pathlib import Path
-from uuid import uuid4
-from platformdirs import user_data_path
 
 from json_helper import write_json
 from nvim import Nvim
@@ -60,7 +55,7 @@ def get_file_title(file_path):
     return title
 
 
-class PageNode:
+class Node:
     """树的一个节点：可以是文件夹（有子节点）或普通页面（叶子节点）。"""
 
     def __init__(
@@ -68,56 +63,85 @@ class PageNode:
         id: str,
         name: str,
         path: Path,
-        node_type: str = "page",
-        parent: "PageNode | None" = None,
+        parent: "Node | None" = None,
     ):
         self.id = id
         self.name = name
         self.path = path
-        self.node_type = node_type  # "folder" 或 "page"
-        self.parent: "PageNode | None" = parent
-        self.children: list["PageNode"] = []
+        self.parent: "Node | None" = parent
+        self.children: list["Node"] = []
 
         path.mkdir(parents=True, exist_ok=True)
-        if node_type == "page":
-            self.md_file = path / "index.md"
-            if not self.md_file.exists():
-                self.md_file.touch()
 
-            self.hash = get_file_hash(self.md_file)
+    @property
+    def url(self):
+        return QUrl()
 
-            self.html_folder = app_path / "cache" / id
-            self.html_folder.mkdir(parents=True, exist_ok=True)
+    @property
+    def node_type(self) -> str: ...
 
-            self.html_file = self.html_folder / "index.html"
-            self.build_html()
-            # if not self.html_file.exists():
-            #     self.build_html()
+    def save(self):
+        for c in self.children:
+            c.save()
 
-    @classmethod
-    def build(cls, parent: "PageNode"):
-        id = str(uuid4())
-        path = parent.path / "children" / id
-        node = cls(id, "Untitled", path, "page", parent)
-        parent.append_child(node)
-
-        return node
-
-    @classmethod
-    def build_from_file(cls, file: Path, parent: "PageNode | None" = None):
-        meta_file = file / "meta.json"
-        meta_json = json.loads(meta_file.read_text(encoding="utf-8"))
-
-        node = cls(
-            meta_json["id"], meta_json["name"], file, meta_json["node_type"], parent
+        write_json(
+            self.path / "meta.json",
+            {
+                "id": self.id,
+                "name": self.name,
+                "node_type": self.node_type,
+                "children": [x.id for x in self.children],
+            },
         )
-        if parent is not None:
-            parent.append_child(node)
 
-        for c in meta_json["children"]:
-            PageNode.build_from_file(file / "children" / c, node)
+    def append_child(self, child: "Node") -> None:
+        child.parent = self
+        self.children.append(child)
 
-        return node
+    def child(self, row: int) -> "Node":
+        return self.children[row]
+
+    def child_count(self) -> int:
+        return len(self.children)
+
+    def row(self) -> int:
+        if self.parent is not None:
+            return self.parent.children.index(self)
+        return 0
+
+
+class PageNode(Node):
+    """树的一个节点：可以是文件夹（有子节点）或普通页面（叶子节点）。"""
+
+    def __init__(
+        self,
+        id: str,
+        name: str,
+        path: Path,
+        parent: "Node | None" = None,
+    ):
+        super().__init__(id, name, path, parent)
+
+        self.md_file = path / "index.md"
+        if not self.md_file.exists():
+            self.md_file.touch()
+
+        self.hash = get_file_hash(self.md_file)
+
+        self.html_folder = app_path / "cache" / id
+        self.html_folder.mkdir(parents=True, exist_ok=True)
+
+        self.html_file = self.html_folder / "index.html"
+        if not self.html_file.exists():
+            self.build_html()
+
+    @property
+    def node_type(self) -> str:
+        return "page"
+
+    @property
+    def url(self):
+        return QUrl.fromLocalFile(self.html_file)
 
     def build_html(self):
         pandoc = Path.cwd() / "external" / "pandoc.exe"
@@ -159,6 +183,9 @@ class PageNode:
                 shutil.copy(file, cache_path)
 
     def check_file(self):
+        if self.node_type == "folder":
+            return True
+
         hash = get_file_hash(self.md_file)
         if hash != self.hash:
             self.hash = hash
@@ -188,60 +215,92 @@ class PageNode:
             },
         )
 
-    def append_child(self, child: "PageNode") -> None:
-        child.parent = self
-        self.children.append(child)
 
-    def child(self, row: int) -> "PageNode":
-        return self.children[row]
-
-    def child_count(self) -> int:
-        return len(self.children)
-
-    def row(self) -> int:
-        if self.parent is not None:
-            return self.parent.children.index(self)
-        return 0
+class ProjectNode(Node):
+    def __init__(
+        self,
+        id: str,
+        name: str,
+        path: Path,
+        parent: "Node | None" = None,
+    ):
+        super().__init__(id, name, path, parent)
 
     @property
-    def url(self):
-        return QUrl.fromLocalFile(self.html_file)
+    def node_type(self) -> str:
+        return "folder"
+
+
+def build_node(node_type: str, name: str, parent: Node) -> Node:
+    id = str(uuid4())
+    path = parent.path / "children" / id
+    node = _build_node(node_type, id, name, path, parent)
+
+    return node
+
+
+def build_from_file(file: Path, parent: Node | None = None):
+    meta_file = file / "meta.json"
+    meta_json = json.loads(meta_file.read_text(encoding="utf-8"))
+
+    node_type = meta_json["node_type"]
+    node = _build_node(
+        meta_json["node_type"],
+        meta_json["id"],
+        meta_json["name"],
+        file,
+        parent,
+    )
+
+    for c in meta_json["children"]:
+        build_from_file(file / "children" / c, node)
+
+    return node
+
+
+def _build_node(
+    node_type: str, id: str, name: str, path: Path, parent: "Node | None" = None
+):
+    if node_type == "page":
+        node = PageNode(id, name, path, parent)
+
+    else:
+        node = ProjectNode(id, name, path, parent)
+
+    if parent is not None:
+        parent.append_child(node)
+
+    return node
 
 
 class PageTreeModel(QAbstractItemModel):
     """标准的层级模型，QML 里的 TreeView 直接绑定这个模型即可。"""
 
-    current_changed = Signal()
+    currentChanged = Signal()
+    currentIndexChanged = Signal(QModelIndex)
+
     NodeTypeRole = Qt.ItemDataRole.UserRole + 1
 
     def __init__(self, path: Path, nvim: Nvim, parent=None):
         super().__init__(parent)
-        self.path = path
         self._nvim = nvim
         if path.exists():
-            self._root = PageNode.build_from_file(path)
+            self._root = build_from_file(path)
         else:
-            self._root = PageNode(str(uuid4()), "__root__", path, "folder")
+            self._root = ProjectNode(str(uuid4()), "__root__", path)
 
         self._timer = QTimer(self)
-        self.current: PageNode | None = None
+        self.current: Node = self._root
 
         self._timer.timeout.connect(self._check_file)
         self._timer.start(300)
 
-    @Property(QUrl, notify=current_changed)
+    @Property(QUrl, notify=currentChanged)
     def current_url(self):
-        if self.current:
-            return self.current.url
-
-        else:
-            return QUrl()
+        return self.current.url
 
     @Slot()
     def paste_files(self):
-        if not self.current:
-            return
-
         clipboard = QGuiApplication.clipboard()
         mime_data = clipboard.mimeData()
 
@@ -249,16 +308,16 @@ class PageTreeModel(QAbstractItemModel):
             logger.info("剪贴板里没有文件")
             return
 
-        self.current.paste_files([Path(url.toLocalFile()) for url in mime_data.urls()])
-        self.current_changed.emit()
+        if isinstance(self.current, PageNode):
+            self.current.paste_files([Path(url.toLocalFile()) for url in mime_data.urls()])
+        self.currentChanged.emit()
 
     def _check_file(self):
-        if self.current is not None:
+        if isinstance(self.current, PageNode):
             if self.current.check_file():
-                self.current_changed.emit()
+                self.currentChanged.emit()
                 index = self.index_for_node(self.current)
                 self.dataChanged.emit(index, index, [Qt.ItemDataRole.DisplayRole])
-
 
     def save(self):
         self._root.save()
@@ -268,30 +327,38 @@ class PageTreeModel(QAbstractItemModel):
     # 数据来源：换成真正的后台读取逻辑
     # ------------------------------------------------------------------
 
-    def index_for_node(self, node: PageNode) -> QModelIndex:
+    def index_for_node(self, node: Node) -> QModelIndex:
         if node is self._root or node.parent is None:
             return QModelIndex()
         return self.createIndex(node.row(), 0, node)
 
     @Slot(QModelIndex)
     def set_current(self, index: QModelIndex):
-        node = index.internalPointer() if index.isValid() else None
+        node = index.internalPointer() if index.isValid() else self._root
         if node is self.current:
             return
         self.current = node
-        if node is not None:
+
+        if isinstance(node, PageNode):
             self._nvim.switch(node.md_file)
 
-        self.current_changed.emit()
+        self.currentChanged.emit()
 
-    @Slot()
-    def add_page(self):
-        parent_index = self.index_for_node(self._root)
-        row = self._root.child_count()
+    @Slot(str, str)
+    def add_node(self, name: str = "Untitled", node_type: str = "page"):
+        if self.current is not None and self.current.node_type == "folder":
+            parent = self.current
 
+        else:
+            parent = self._root
+
+        parent_index = self.index_for_node(parent)
+        row = parent.child_count()
         self.beginInsertRows(parent_index, row, row)
-        PageNode.build(self._root)
+        node = build_node(node_type, name, parent)
         self.endInsertRows()
+
+        self.currentIndexChanged.emit(self.index_for_node(node))
 
     # ------------------------------------------------------------------
     # QAbstractItemModel 标准接口
@@ -306,7 +373,7 @@ class PageTreeModel(QAbstractItemModel):
     def parent(self, index):
         if not index.isValid():
             return QModelIndex()
-        child_node: PageNode = index.internalPointer()
+        child_node: Node = index.internalPointer()
         parent_node = child_node.parent
         if parent_node is None or parent_node is self._root:
             return QModelIndex()
@@ -324,7 +391,7 @@ class PageTreeModel(QAbstractItemModel):
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
-        node: PageNode = index.internalPointer()
+        node: Node = index.internalPointer()
         if role == Qt.ItemDataRole.DisplayRole:
             return node.name
 

@@ -25,7 +25,8 @@ Item {
         "inbox": "inbox",
         "settings": "settings",
         "trash": "trash",
-        "plus": "plus"
+        "plus": "plus",
+        "folder-plus": "folder-plus"
     })
 
     Image {

@@ -101,6 +101,13 @@ Rectangle {
               model: pageTreeModel
             }
 
+            Connections {
+              target: pageTreeModel
+              function onCurrentIndexChanged(index) {
+                treeSelectionModel.setCurrentIndex(index, ItemSelectionModel.ClearAndSelect)
+              }
+            }
+
             delegate: Item {
                 id: treeDelegate
 
@@ -120,6 +127,17 @@ Rectangle {
                     color: treeDelegate.current ? Theme.currentBackground : (rowMa.containsMouse ? Theme.hoverBackground : "transparent")
                     radius: Theme.radius
 
+                    MouseArea {
+                        id: rowMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: {
+                            var idx = treeView.index(treeDelegate.row, 0)
+                            treeSelectionModel.setCurrentIndex(idx, ItemSelectionModel.ClearAndSelect)
+                            pageTreeModel.set_current(idx)
+
+                        }
+                    }
                     Row {
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.left: parent.left
@@ -139,6 +157,15 @@ Rectangle {
                                 color: Theme.textSecondary
                                 rotation: treeDelegate.expanded ? 90 : 0
                                 Behavior on rotation { NumberAnimation { duration: 100 } }
+                            }
+
+                            MouseArea {
+                              anchors.fill: parent
+                              enabled: treeDelegate.hasChildren
+                              onClicked: (mouse) => {
+                                treeView.toggleExpanded(treeDelegate.row)
+                                mouse.accepted = true
+                              }
                             }
                         }
 
@@ -160,21 +187,6 @@ Rectangle {
                         }
                     }
 
-                    MouseArea {
-                        id: rowMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: {
-                            if (treeDelegate.hasChildren)
-                                treeView.toggleExpanded(treeDelegate.row)
-
-                            var idx = treeView.index(treeDelegate.row, 0)
-                            treeSelectionModel.setCurrentIndex(idx, ItemSelectionModel.ClearAndSelect)
-
-                            pageTreeModel.set_current(idx)
-
-                        }
-                    }
                 }
             }
         }
@@ -206,7 +218,15 @@ Rectangle {
               iconName: "plus" 
               label: "新建页面" 
               onClicked: {
-                pageTreeModel.add_page()
+                pageTreeModel.add_node("Untitled", "page")
+              }
+            }
+            SidebarAction { 
+              width: parent.width 
+              iconName: "folder-plus" 
+              label: "新建项目" 
+              onClicked: {
+                pageTreeModel.add_node("Project", "folder")
               }
             }
         }

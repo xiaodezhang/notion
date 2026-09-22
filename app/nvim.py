@@ -10,7 +10,7 @@ class Nvim(QObject):
     def __init__(self):
         super().__init__()
 
-        self._valid = True
+        self._valid = False
         try:
             subprocess.run(['neovide', '--version'], check=True,
                            creationflags=subprocess.CREATE_NO_WINDOW)
@@ -18,10 +18,10 @@ class Nvim(QObject):
             self._client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._process = subprocess.Popen(['neovide', '--', '--cmd', 'let g:switch_enabled=1'])
             self._client.connect(('127.0.0.1', 36795))
+            self._valid = True
 
         except Exception as e:
             logger.warning(f"neovide connected failed: {str(e)}")
-            self._valid = False
 
     @Slot(Path)
     def switch(self, path: Path):
