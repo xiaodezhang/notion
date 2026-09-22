@@ -19,6 +19,7 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
+from PySide6.QtGui import QGuiApplication
 from platformdirs import user_data_dir, user_data_path
 from uuid import uuid4
 from loguru import logger
@@ -141,6 +142,22 @@ class PageNode:
         if name != self.name:
             self.name = name
 
+    def paste_files(self, files: list[Path]):
+        for file in files:
+            if not file.exists():
+                continue
+
+            target_path = self.path / file.name
+            cache_path = self.html_folder / file.name
+
+            if file.is_dir():
+                shutil.copytree(file, target_path, dirs_exist_ok=True)
+                shutil.copytree(file, cache_path, dirs_exist_ok=True)
+
+            else:
+                shutil.copy(file, target_path)
+                shutil.copy(file, cache_path)
+
     def check_file(self):
         hash = get_file_hash(self.md_file)
         if hash != self.hash:
@@ -219,6 +236,21 @@ class PageTreeModel(QAbstractItemModel):
 
         else:
             return QUrl()
+
+    @Slot()
+    def paste_files(self):
+        if not self.current:
+            return
+
+        clipboard = QGuiApplication.clipboard()
+        mime_data = clipboard.mimeData()
+
+        if not mime_data.hasUrls():
+            logger.info("剪贴板里没有文件")
+            return
+
+        self.current.paste_files([Path(url.toLocalFile()) for url in mime_data.urls()])
+        self.current_changed.emit()
 
     def _check_file(self):
         if self.current is not None:

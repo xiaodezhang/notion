@@ -24,4 +24,9 @@ ApplicationWindow {
 
         }
     }
+
+    Shortcut {
+      sequences: [StandardKey.Paste]   // 或者 "Ctrl+V"
+      onActivated: pageTreeModel.paste_files()
+    }
 }
