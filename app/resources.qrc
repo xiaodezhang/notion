@@ -1,0 +1,25 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/Main.qml</file>
+        <file>qml/CreateProjectPage.qml</file>
+        <file>qml/Icon.qml</file>
+        <file>qml/Page2.qml</file>
+        <file>qml/PageItem.qml</file>
+        <file>qml/Sidebar.qml</file>
+        <file>qml/SidebarAction.qml</file>
+        <file>qml/Theme.qml</file>
+        <file>qml/qmldir</file>
+
+        <file>icons/chevron-right.svg</file>
+        <file>icons/file-text.svg</file>
+        <file>icons/folder-plus.svg</file>
+        <file>icons/folder.svg</file>
+        <file>icons/hive.svg</file>
+        <file>icons/hive.png</file>
+        <file>icons/inbox.svg</file>
+        <file>icons/plus.svg</file>
+        <file>icons/search.svg</file>
+        <file>icons/settings.svg</file>
+        <file>icons/trash.svg</file>
+    </qresource>
+</RCC>

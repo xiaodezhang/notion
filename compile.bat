@@ -1,2 +1,2 @@
-call ..\env_13\Scripts\activate
+call ..\env\Scripts\activate
 py ./compile.py

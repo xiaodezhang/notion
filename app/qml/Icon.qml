@@ -32,7 +32,7 @@ Item {
     Image {
         id: img
         anchors.fill: parent
-        source: "icons/" + (root._fileMap[root.name] || root.name) + ".svg"
+        source: "qrc:/icons/" + (root._fileMap[root.name] || root.name) + ".svg"
         sourceSize: Qt.size(root.width * 2, root.height * 2) // 2x 栅格化，小尺寸也清晰
         smooth: true
         visible: false // 真正显示的是下面染色后的效果
