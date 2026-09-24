@@ -26,7 +26,8 @@ Item {
         "settings": "settings",
         "trash": "trash",
         "plus": "plus",
-        "folder-plus": "folder-plus"
+        "folder-plus": "folder-plus",
+        "more": "ellipsis-vertical"
     })
 
     Image {

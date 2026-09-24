@@ -27,12 +27,16 @@ ApplicationWindow {
     // Main.qml 里
     CreateProjectPage {
       id: createProjectPage
+      property bool from_root: true
       anchors.fill: parent
       visible: false
 
       onCancelled: visible = false
       onCreateRequested: (name, description, colorName) => {
-        pageTreeModel.add_node(name, "folder")
+        if (from_root)
+          pageTreeModel.add_node(name, "folder")
+        else
+          pageTreeModel.add_node_from_project(name, "folder")
         visible = false
       }
     }

@@ -371,8 +371,14 @@ class PageTreeModel(QAbstractItemModel):
 
     @Slot(str, str)
     def add_node(self, name: str = "Untitled", node_type: str = "page"):
-        parent = get_project(self.current)
+        self._add_node(self._root, name, node_type)
 
+    @Slot(str, str)
+    def add_node_from_project(self, name: str = "Untitled", node_type: str = "page"):
+        parent = get_project(self.current)
+        self._add_node(parent, name, node_type)
+
+    def _add_node(self, parent, name: str = "Untitled", node_type: str = "page"):
         parent_index = self.index_for_node(parent)
         row = parent.child_count()
         self.beginInsertRows(parent_index, row, row)
@@ -382,6 +388,7 @@ class PageTreeModel(QAbstractItemModel):
         new_index = self.index_for_node(node)
         self.set_current(new_index)
         self.currentIndexChanged.emit(new_index)
+
 
     # ------------------------------------------------------------------
     # QAbstractItemModel 标准接口

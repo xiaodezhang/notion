@@ -88,6 +88,7 @@ Rectangle {
               iconName: "folder-plus" 
               label: "新建项目" 
               onClicked: {
+                createProjectPage.from_root = true
                 createProjectPage.visible = true
               }
             }
@@ -176,10 +177,10 @@ Rectangle {
 
                         }
                     }
-                    Row {
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
+                    RowLayout {
+                        anchors.fill: parent
                         anchors.leftMargin: 4 + treeDelegate.depth * Theme.indent
+                        anchors.rightMargin: 8
                         spacing: 4
 
                         // 展开/折叠指示箭头
@@ -190,8 +191,8 @@ Rectangle {
                                 anchors.centerIn: parent
                                 visible: treeDelegate.hasChildren
                                 name: "chevron"
-                                width: 10
-                                height: 10
+                                width: 12
+                                height: 12
                                 color: Theme.textSecondary
                                 rotation: treeDelegate.expanded ? 90 : 0
                                 Behavior on rotation { NumberAnimation { duration: 100 } }
@@ -209,7 +210,6 @@ Rectangle {
 
                         // 文件夹 / 页面 图标
                         Icon {
-                            anchors.verticalCenter: parent.verticalCenter
                             name: treeDelegate.model.nodeType === "folder" ? "folder" : "page"
                             color: Theme.iconColor
                             width: 15
@@ -217,12 +217,57 @@ Rectangle {
                         }
 
                         Text {
-                            anchors.verticalCenter: parent.verticalCenter
                             text: treeDelegate.model.display
                             font.pixelSize: Theme.fontSizeNormal
                             color: Theme.textPrimary
                             elide: Text.ElideRight
                         }
+
+                        Item {
+                          Layout.fillWidth: true
+                        }
+
+                        Item {
+                            width: 16
+                            height: Theme.rowHeight
+                            Icon {
+                                anchors.centerIn: parent
+                                visible: (treeDelegate.model.nodeType === "folder" && rowMa.containsMouse) || moreMenu.visible
+                                name: "more"
+                                width: 15
+                                height: 15
+                                color: Theme.textSecondary
+                            }
+
+                            MouseArea {
+                              anchors.fill: parent
+                              enabled: treeDelegate.model.nodeType === "folder"
+                              onClicked: (mouse) => {
+                                moreMenu.popup()
+                                
+                              }
+                            }
+
+                            Menu {
+                              id: moreMenu
+
+                              MenuItem {
+                                text: "新建项目"
+                                onTriggered: {
+                                  createProjectPage.from_root = false
+                                  createProjectPage.visible = true
+                                }
+                              }
+                              MenuItem {
+                                text: "新建页面"
+                                onTriggered: {
+                                  pageTreeModel.add_node_from_project("Untitled", "page")
+
+                                }
+                              }
+                            }
+                        }
+
                     }
 
                 }
