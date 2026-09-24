@@ -228,3 +228,4 @@ net/*
 movies/*
 # test/*
 external/*
+proxy.json

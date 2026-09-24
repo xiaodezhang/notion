@@ -9,6 +9,7 @@
 import json
 import subprocess
 from pathlib import Path
+import threading
 from PySide6.QtCore import (
     Property,
     QAbstractItemModel,
@@ -31,6 +32,7 @@ from loguru import logger
 from json_helper import write_json
 from nvim import Nvim
 from path_helper import app_path
+from upload import Uploader
 
 
 def get_file_hash(file_path):
@@ -226,6 +228,7 @@ def get_project(node: Node):
     assert node.parent
     return get_project(node.parent)
 
+
 def build_node(node_type: str, name: str, parent: Node) -> Node:
     id = str(uuid4())
     path = parent.path / "children" / id
@@ -282,6 +285,7 @@ class PageTreeModel(QAbstractItemModel):
     currentChanged = Signal()
     currentIndexChanged = Signal(QModelIndex)
     request_expand_all = Signal(list)  # 传一批需要展开的 QModelIndex
+    uploadDone = Signal()
 
     NodeTypeRole = Qt.ItemDataRole.UserRole + 1
 
@@ -302,6 +306,20 @@ class PageTreeModel(QAbstractItemModel):
     @Property(QUrl, notify=currentChanged)
     def current_url(self):
         return self.current.url
+
+    @Slot()
+    def share(self):
+        if isinstance(self.current, PageNode):
+            data = json.loads((Path.cwd() / "proxy.json").read_text(encoding="utf-8"))
+            host = data["ip"]
+            password = data["password"]
+
+            self._uploader = Uploader(self.current.html_folder, host, password)
+            self._uploader.done.connect(self.uploadDone)
+            self._uploader.start()
+
+            address = f"{host}/{self.current.html_folder.stem}"
+            QGuiApplication.clipboard().setText(address)
 
     @Slot()
     def paste_files(self):
@@ -388,7 +406,6 @@ class PageTreeModel(QAbstractItemModel):
         new_index = self.index_for_node(node)
         self.set_current(new_index)
         self.currentIndexChanged.emit(new_index)
-
 
     # ------------------------------------------------------------------
     # QAbstractItemModel 标准接口

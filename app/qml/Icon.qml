@@ -8,6 +8,7 @@ import QtQuick.Effects
 // Icon { name: "folder"; color: Theme.iconColor }
 Item {
     id: root
+    signal clicked()
     property string name: "page"
     property color color: "#37352f"
 
@@ -27,7 +28,8 @@ Item {
         "trash": "trash",
         "plus": "plus",
         "folder-plus": "folder-plus",
-        "more": "ellipsis-vertical"
+        "more": "ellipsis-vertical",
+        "upload": "upload",
     })
 
     Image {
@@ -44,5 +46,8 @@ Item {
         source: img
         colorization: 1.0
         colorizationColor: root.color
+    }
+    TapHandler {
+      onTapped: root.clicked()
     }
 }

@@ -5,6 +5,7 @@ from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtCore import QUrl
 from PySide6.QtWebEngineQuick import QtWebEngineQuick
+from PySide6.QtQuickControls2 import QQuickStyle
 from platformdirs import user_data_path
 
 from page_tree_model import PageTreeModel
@@ -17,6 +18,7 @@ def main():
     app.setWindowIcon(QIcon(":/icons/hive.png"))
     engine = QQmlApplicationEngine()
     QtWebEngineQuick.initialize()
+    QQuickStyle.setStyle("Fusion") 
 
     # 后台数据模型：QML 的 TreeView 直接绑定它，不再在 QML 里写死数据
     path = user_data_path() / "notion" / "vault"

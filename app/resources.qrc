@@ -22,5 +22,6 @@
         <file>icons/settings.svg</file>
         <file>icons/trash.svg</file>
         <file>icons/ellipsis-vertical.svg</file>
+        <file>icons/upload.svg</file>
     </qresource>
 </RCC>
