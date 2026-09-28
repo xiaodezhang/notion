@@ -83,12 +83,16 @@ class Node:
     @property
     def icon(self):
         if (self.path / "icon.svg").exists():
-            return self.path / "icon.svg"
+            return QUrl.fromLocalFile(self.path / "icon.svg")
 
-        return ":/icons/folder.svg"
+        return self.default_icon
 
     @property
     def node_type(self) -> str: ...
+
+    @property
+    def default_icon(self) -> str: ...
+
 
     def save(self):
         for c in self.children:
@@ -154,6 +158,9 @@ class PageNode(Node):
     def url(self):
         return QUrl.fromLocalFile(self.html_file)
 
+    @property
+    def default_icon(self) -> str:
+        return "qrc:/icons/file-text.svg"
 
     def build_html(self):
         pandoc = Path.cwd() / "external" / "pandoc.exe"
@@ -228,6 +235,10 @@ class ProjectNode(Node):
     def node_type(self) -> str:
         return "folder"
 
+    @property
+    def default_icon(self) -> str:
+        return "qrc:/icons/folder.svg"
+
 
 def get_project(node: Node):
     if node.node_type == "folder":
@@ -296,6 +307,7 @@ class PageTreeModel(QAbstractItemModel):
     uploadDone = Signal()
 
     NodeTypeRole = Qt.ItemDataRole.UserRole + 1
+    NodeIconRole = Qt.ItemDataRole.UserRole + 2
 
     def __init__(self, path: Path, nvim: Nvim, parent=None):
         super().__init__(parent)
@@ -328,6 +340,12 @@ class PageTreeModel(QAbstractItemModel):
 
             address = f"http://{host}/{self.current.html_folder.stem}"
             QGuiApplication.clipboard().setText(address)
+
+    @Slot()
+    def edit(self):
+        if isinstance(self.current, PageNode):
+            self._nvim.open()
+            self._nvim.switch(self.current.md_file)
 
     @Slot()
     def paste_files(self):
@@ -408,6 +426,8 @@ class PageTreeModel(QAbstractItemModel):
     def set_icon(self, url):
         path = url.toLocalFile()
         shutil.copy2(path, self.current.path / "icon.svg")
+        index = self.index_for_node(self.current)
+        self.dataChanged.emit(index, index, [self.NodeIconRole])
 
     def _add_node(self, parent, name: str = "Untitled", node_type: str = "page"):
         parent_index = self.index_for_node(parent)
@@ -458,10 +478,14 @@ class PageTreeModel(QAbstractItemModel):
         if role == self.NodeTypeRole:
             return node.node_type
 
+        if role == self.NodeIconRole:
+            return node.icon
+
         return None
 
     def roleNames(self):
         return {
             Qt.ItemDataRole.DisplayRole: b"display",
             self.NodeTypeRole: b"nodeType",
+            self.NodeIconRole: b"nodeIcon",
         }

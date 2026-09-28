@@ -49,17 +49,33 @@ Rectangle {
       }
     }
 
-    Icon {
-      id: upload
-      name: "upload"
-      Layout.alignment: Qt.AlignRight
-      Layout.rightMargin: 10
-      width: 11
-      height: 11
-      onClicked: {
-        bar.visible = true
-        pageTreeModel.share()
+    RowLayout {
+      Layout.rightMargin: 8
+      spacing: 8
+
+      Item {Layout.fillWidth: true}
+
+      Icon {
+        id: edit 
+        name: "edit"
+        width: 11
+        height: 11
+        onClicked: {
+          pageTreeModel.edit()
+        }
       }
+
+      Icon {
+        id: upload
+        name: "upload"
+        width: 11
+        height: 11
+        onClicked: {
+          bar.visible = true
+          pageTreeModel.share()
+        }
+      }
+
     }
 
     WebEngineView {

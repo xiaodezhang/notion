@@ -20,7 +20,7 @@ def main():
     app.setWindowIcon(QIcon(":/icons/hive.png"))
     # app.setFont(QFont("Microsoft YaHei UI", 10))
     font = QFont("Microsoft YaHei", 10)
-    font.setWeight(QFont.Weight.Light)
+    # font.setWeight(QFont.Weight.Light)
     app.setFont(font)
 
     QtWebEngineQuick.initialize()

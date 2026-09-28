@@ -10,7 +10,7 @@ Item {
     id: root
     signal clicked()
     property string name: "page"
-    property color color: "#37352f"
+    property color color: "#5b6bd6"
 
     implicitWidth: 16
     implicitHeight: 16
@@ -30,6 +30,7 @@ Item {
         "folder-plus": "folder-plus",
         "more": "ellipsis-vertical",
         "upload": "upload",
+        "edit": "square-pen",
     })
 
     Image {

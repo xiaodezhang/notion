@@ -11,6 +11,17 @@ class Nvim(QObject):
         super().__init__()
 
         self._valid = False
+
+    @Slot(Path)
+    def switch(self, path: Path):
+        if self._valid:
+            try:
+                self._client.sendall(str(path).encode('utf-8'))
+            except:
+                self._valid = False
+
+    @Slot()
+    def open(self):
         try:
             subprocess.run(['neovide', '--version'], check=True,
                            creationflags=subprocess.CREATE_NO_WINDOW)
@@ -22,11 +33,6 @@ class Nvim(QObject):
 
         except Exception as e:
             logger.warning(f"neovide connected failed: {str(e)}")
-
-    @Slot(Path)
-    def switch(self, path: Path):
-        if self._valid:
-            self._client.sendall(str(path).encode('utf-8'))
 
     def close(self):
         if self._valid:

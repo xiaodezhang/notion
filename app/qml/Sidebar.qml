@@ -91,8 +91,6 @@ Rectangle {
         }
 
 
-        Item { Layout.preferredHeight: 8 }
-
         Rectangle {
             Layout.fillWidth: true
             Layout.leftMargin: 8
@@ -205,11 +203,16 @@ Rectangle {
                         }
 
                         // 文件夹 / 页面 图标
-                        Icon {
-                            name: treeDelegate.model.nodeType === "folder" ? "folder" : "page"
-                            // color: Theme.iconColor
-                            width: 15
-                            height: 15
+                        // Icon {
+                        //     name: treeDelegate.model.nodeType === "folder" ? "folder" : "page"
+                        //     // color: Theme.iconColor
+                        //     width: 15
+                        //     height: 15
+                        // }
+                        Image {
+                            source: treeDelegate.model.nodeIcon
+                            sourceSize.width: 15
+                            sourceSize.height: 15
                         }
 
                         Text {
@@ -273,12 +276,9 @@ Rectangle {
                               FileDialog {
                                 id: fileDialog
                                 title: qsTr("选择文件")
-                                nameFilters: ["图片 (*.png *.jpg *.jpeg)", "所有文件 (*)"]
-                                // fileMode: FileDialog.OpenFiles     // 多选
+                                nameFilters: ["图片 (*.png *.jpg *.jpeg *.svg)", "所有文件 (*)"]
                                 onAccepted: {
                                   pageTreeModel.set_icon(selectedFile)
-                                  console.log("选中:", selectedFile)      // 单选,是 url
-                                  // console.log(selectedFiles)           // 多选,是 url 数组
                                 }
                               }
 
@@ -304,6 +304,7 @@ Rectangle {
         Column {
             Layout.fillWidth: true
             Layout.topMargin: 4
+            Layout.bottomMargin: 8
             Layout.leftMargin: 8
             Layout.rightMargin: 8
             spacing: 1

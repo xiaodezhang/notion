@@ -15,7 +15,7 @@ QtObject {
     // 文本 / 图标
     readonly property color textPrimary: "#4a4a47"
     readonly property color textSecondary: "#9a9a97"
-    readonly property color iconColor: "#333333"
+    readonly property color iconColor: "#5b6bd6"
 
     // 尺寸
     readonly property int rowHeight: 28
