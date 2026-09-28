@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtGui import QGuiApplication, QIcon
+from PySide6.QtGui import QFont, QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtCore import QUrl
 from PySide6.QtWebEngineQuick import QtWebEngineQuick
@@ -15,8 +15,14 @@ import resources_rc
 
 def main():
     app = QGuiApplication(sys.argv)
-    app.setWindowIcon(QIcon(":/icons/hive.png"))
     engine = QQmlApplicationEngine()
+
+    app.setWindowIcon(QIcon(":/icons/hive.png"))
+    # app.setFont(QFont("Microsoft YaHei UI", 10))
+    font = QFont("Microsoft YaHei", 10)
+    font.setWeight(QFont.Weight.Light)
+    app.setFont(font)
+
     QtWebEngineQuick.initialize()
     QQuickStyle.setStyle("Fusion") 
 

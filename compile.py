@@ -22,6 +22,7 @@ with open("version.txt") as file:
             "--windows-console-mode=disable",
             f"--windows-icon-from-ico=./app/icons/{icon}",
             "--include-data-file=./version.txt=version.txt",
+            "--include-data-file=./proxy.json=proxy.json",
             f"--include-data-file=./{file_name}={file_name}",
             f"--output-filename={app_name}",
             "--output-dir=./dist",

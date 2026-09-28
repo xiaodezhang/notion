@@ -81,6 +81,13 @@ class Node:
         return QUrl()
 
     @property
+    def icon(self):
+        if (self.path / "icon.svg").exists():
+            return self.path / "icon.svg"
+
+        return ":/icons/folder.svg"
+
+    @property
     def node_type(self) -> str: ...
 
     def save(self):
@@ -146,6 +153,7 @@ class PageNode(Node):
     @property
     def url(self):
         return QUrl.fromLocalFile(self.html_file)
+
 
     def build_html(self):
         pandoc = Path.cwd() / "external" / "pandoc.exe"
@@ -318,7 +326,7 @@ class PageTreeModel(QAbstractItemModel):
             self._uploader.done.connect(self.uploadDone)
             self._uploader.start()
 
-            address = f"{host}/{self.current.html_folder.stem}"
+            address = f"http://{host}/{self.current.html_folder.stem}"
             QGuiApplication.clipboard().setText(address)
 
     @Slot()
@@ -395,6 +403,11 @@ class PageTreeModel(QAbstractItemModel):
     def add_node_from_project(self, name: str = "Untitled", node_type: str = "page"):
         parent = get_project(self.current)
         self._add_node(parent, name, node_type)
+
+    @Slot(QUrl)
+    def set_icon(self, url):
+        path = url.toLocalFile()
+        shutil.copy2(path, self.current.path / "icon.svg")
 
     def _add_node(self, parent, name: str = "Untitled", node_type: str = "page"):
         parent_index = self.index_for_node(parent)

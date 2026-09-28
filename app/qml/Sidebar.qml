@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Dialogs
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -70,11 +71,6 @@ Rectangle {
             Layout.rightMargin: 8
             spacing: 1
 
-            SidebarAction {
-              width: parent.width
-              iconName: "trash"
-              label: "回收站" 
-            }
             SidebarAction { 
               width: parent.width 
               iconName: "plus" 
@@ -211,7 +207,7 @@ Rectangle {
                         // 文件夹 / 页面 图标
                         Icon {
                             name: treeDelegate.model.nodeType === "folder" ? "folder" : "page"
-                            color: Theme.iconColor
+                            // color: Theme.iconColor
                             width: 15
                             height: 15
                         }
@@ -253,6 +249,7 @@ Rectangle {
 
                               MenuItem {
                                 text: "新建项目"
+                                icon.source: "qrc:/icons/folder-plus.svg"
                                 onTriggered: {
                                   createProjectPage.from_root = false
                                   createProjectPage.visible = true
@@ -260,11 +257,32 @@ Rectangle {
                               }
                               MenuItem {
                                 text: "新建页面"
+                                icon.source: "qrc:/icons/plus.svg"
                                 onTriggered: {
                                   pageTreeModel.add_node_from_project("Untitled", "page")
 
                                 }
                               }
+                              MenuItem {
+                                text: "设置icon"
+                                icon.source: "qrc:/icons/plus.svg"
+                                onTriggered: {
+                                  fileDialog.open()
+                                }
+                              }
+                              FileDialog {
+                                id: fileDialog
+                                title: qsTr("选择文件")
+                                nameFilters: ["图片 (*.png *.jpg *.jpeg)", "所有文件 (*)"]
+                                // fileMode: FileDialog.OpenFiles     // 多选
+                                onAccepted: {
+                                  pageTreeModel.set_icon(selectedFile)
+                                  console.log("选中:", selectedFile)      // 单选,是 url
+                                  // console.log(selectedFiles)           // 多选,是 url 数组
+                                }
+                              }
+
+
                             }
                         }
 
@@ -292,6 +310,11 @@ Rectangle {
 
             SidebarAction { width: parent.width; iconName: "search"; label: "搜索" }
             SidebarAction { width: parent.width; iconName: "inbox"; label: "收件箱" }
+            SidebarAction {
+              width: parent.width
+              iconName: "trash"
+              label: "回收站" 
+            }
             SidebarAction { width: parent.width; iconName: "settings"; label: "设置" }
         }
 

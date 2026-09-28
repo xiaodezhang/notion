@@ -15,7 +15,7 @@ QtObject {
     // 文本 / 图标
     readonly property color textPrimary: "#4a4a47"
     readonly property color textSecondary: "#9a9a97"
-    readonly property color iconColor: "#6b6b68"
+    readonly property color iconColor: "#333333"
 
     // 尺寸
     readonly property int rowHeight: 28
@@ -24,7 +24,7 @@ QtObject {
     readonly property int sidebarWidth: 260
 
     // 字体
-    readonly property int fontSizeNormal: 14
+    readonly property int fontSizeNormal: 13
     readonly property int fontSizeSmall: 12
     readonly property int fontSizeTitle: 28
 }
