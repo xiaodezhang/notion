@@ -231,7 +231,7 @@ Rectangle {
                             height: Theme.rowHeight
                             Icon {
                                 anchors.centerIn: parent
-                                visible: (treeDelegate.model.nodeType === "folder" && rowMa.containsMouse) || moreMenu.visible
+                                visible: rowMa.containsMouse || moreMenu.visible
                                 name: "more"
                                 width: 15
                                 height: 15
@@ -240,7 +240,7 @@ Rectangle {
 
                             MouseArea {
                               anchors.fill: parent
-                              enabled: treeDelegate.model.nodeType === "folder"
+                              // enabled: treeDelegate.model.nodeType === "folder"
                               onClicked: (mouse) => {
                                 moreMenu.popup()
                                 
@@ -253,37 +253,59 @@ Rectangle {
                               MenuItem {
                                 text: "新建项目"
                                 icon.source: "qrc:/icons/folder-plus.svg"
+                                visible: treeDelegate.model.nodeType === "folder" && (rowMa.containsMouse || moreMenu.visible)
+                                height: visible ? implicitHeight : 0
                                 onTriggered: {
                                   createProjectPage.from_root = false
                                   createProjectPage.visible = true
                                 }
                               }
+
                               MenuItem {
                                 text: "新建页面"
                                 icon.source: "qrc:/icons/plus.svg"
+                                visible: treeDelegate.model.nodeType === "folder" && (rowMa.containsMouse || moreMenu.visible)
+                                height: visible ? implicitHeight : 0
                                 onTriggered: {
-                                  pageTreeModel.add_node_from_project("Untitled", "page")
+                                  var idx = treeView.index(treeDelegate.row, 0)
+                                  pageTreeModel.add_node_from_project("Untitled", "page", idx)
 
                                 }
                               }
+
                               MenuItem {
                                 text: "设置icon"
                                 icon.source: "qrc:/icons/plus.svg"
+                                visible: rowMa.containsMouse || moreMenu.visible
                                 onTriggered: {
                                   fileDialog.open()
                                 }
                               }
-                              FileDialog {
-                                id: fileDialog
-                                title: qsTr("选择文件")
-                                nameFilters: ["图片 (*.png *.jpg *.jpeg *.svg)", "所有文件 (*)"]
-                                onAccepted: {
-                                  pageTreeModel.set_icon(selectedFile)
+
+                              MenuItem {
+                                text: "删除"
+                                icon.source: "qrc:/icons/trash.svg"
+                                visible: rowMa.containsMouse || moreMenu.visible
+                                onTriggered: {
+                                  var idx = treeView.index(treeDelegate.row, 0)
+                                  pageTreeModel.delete(idx)
+
                                 }
                               }
 
 
                             }
+
+                            FileDialog {
+                              id: fileDialog
+                              title: qsTr("选择文件")
+                              nameFilters: ["图片 (*.png *.jpg *.jpeg *.svg)", "所有文件 (*)"]
+                              onAccepted: {
+                                var idx = treeView.index(treeDelegate.row, 0)
+                                pageTreeModel.set_icon(selectedFile, idx)
+                              }
+                            }
+
                         }
 
                     }

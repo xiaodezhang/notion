@@ -65,11 +65,13 @@ class Node:
         id: str,
         name: str,
         path: Path,
+        icon_name: str | None = None,
         parent: "Node | None" = None,
     ):
         self.id = id
         self.name = name
         self.path = path
+        self._icon_name = icon_name
         self.parent: "Node | None" = parent
         self.expanded = True
         self.children: list["Node"] = []
@@ -82,8 +84,10 @@ class Node:
 
     @property
     def icon(self):
-        if (self.path / "icon.svg").exists():
-            return QUrl.fromLocalFile(self.path / "icon.svg")
+        if self._icon_name is not None:
+            path = self.path / self._icon_name
+            if path.exists():
+                return QUrl.fromLocalFile(path)
 
         return self.default_icon
 
@@ -92,6 +96,9 @@ class Node:
 
     @property
     def default_icon(self) -> str: ...
+
+    def set_icon_name(self, name):
+        self._icon_name = name
 
 
     def save(self):
@@ -104,6 +111,7 @@ class Node:
                 "id": self.id,
                 "name": self.name,
                 "node_type": self.node_type,
+                "icon": self._icon_name,
                 "expanded": self.expanded,
                 "children": [x.id for x in self.children],
             },
@@ -112,6 +120,9 @@ class Node:
     def append_child(self, child: "Node") -> None:
         child.parent = self
         self.children.append(child)
+
+    def remove_child(self, child: "Node") -> None:
+        self.children.remove(child)
 
     def child(self, row: int) -> "Node":
         return self.children[row]
@@ -133,9 +144,10 @@ class PageNode(Node):
         id: str,
         name: str,
         path: Path,
+        icon_name: str | None = None,
         parent: "Node | None" = None,
     ):
-        super().__init__(id, name, path, parent)
+        super().__init__(id, name, path, icon_name, parent)
 
         self.md_file = path / "index.md"
         if not self.md_file.exists():
@@ -227,9 +239,10 @@ class ProjectNode(Node):
         id: str,
         name: str,
         path: Path,
+        icon_name: str | None = None,
         parent: "Node | None" = None,
     ):
-        super().__init__(id, name, path, parent)
+        super().__init__(id, name, path, icon_name, parent)
 
     @property
     def node_type(self) -> str:
@@ -251,7 +264,7 @@ def get_project(node: Node):
 def build_node(node_type: str, name: str, parent: Node) -> Node:
     id = str(uuid4())
     path = parent.path / "children" / id
-    node = _build_node(node_type, id, name, path, True, parent)
+    node = _build_node(node_type, id, name, path, None, True, parent)
 
     return node
 
@@ -266,6 +279,7 @@ def build_from_file(file: Path, parent: Node | None = None):
         meta_json["id"],
         meta_json["name"],
         file,
+        meta_json.get("icon", None),
         meta_json["expanded"],
         parent,
     )
@@ -281,14 +295,15 @@ def _build_node(
     id: str,
     name: str,
     path: Path,
+    icon_name: str|None,
     expanded: bool,
     parent: Node | None = None,
 ):
     if node_type == "page":
-        node = PageNode(id, name, path, parent)
+        node = PageNode(id, name, path, icon_name, parent)
 
     else:
-        node = ProjectNode(id, name, path, parent)
+        node = ProjectNode(id, name, path, icon_name, parent)
 
     node.expanded = expanded
 
@@ -346,6 +361,43 @@ class PageTreeModel(QAbstractItemModel):
         if isinstance(self.current, PageNode):
             self._nvim.open()
             self._nvim.switch(self.current.md_file)
+
+    def _in_subtree(self, node: Node | None, ancestor: Node) -> bool:
+        while node is not None:
+            if node is ancestor:
+                return True
+            node = node.parent
+        return False
+
+    @Slot(QModelIndex)
+    def delete(self, index: QModelIndex):
+        if not index.isValid():
+            return
+
+        node: Node = index.internalPointer()
+        parent = node.parent
+        if parent is None:  # 根节点不能删
+            return
+
+        # 1. 当前节点在被删的子树里，先切走
+        if self._in_subtree(self.current, node):
+            self.current = parent
+            self.currentChanged.emit()
+
+        # 2. 通知视图移除行
+        row = node.row()
+        parent_index = self.index_for_node(parent)
+        self.beginRemoveRows(parent_index, row, row)
+        parent.remove_child(node)
+        self.endRemoveRows()
+
+        # 3. 移到回收站
+        trash_path = app_path / "trash"
+        trash_path.mkdir(parents=True, exist_ok=True)
+        shutil.move(node.path, trash_path / node.path.name)
+
+        # 4. 立即写回父节点的 meta.json，防止崩溃后不一致
+        parent.save()
 
     @Slot()
     def paste_files(self):
@@ -417,16 +469,26 @@ class PageTreeModel(QAbstractItemModel):
     def add_node(self, name: str = "Untitled", node_type: str = "page"):
         self._add_node(self._root, name, node_type)
 
-    @Slot(str, str)
-    def add_node_from_project(self, name: str = "Untitled", node_type: str = "page"):
-        parent = get_project(self.current)
+    @Slot(str, str, QModelIndex)
+    def add_node_from_project(self, name: str, node_type: str, index: QModelIndex):
+        if not index.isValid():
+            return
+
+        node: Node = index.internalPointer()
+        parent = get_project(node)
         self._add_node(parent, name, node_type)
 
-    @Slot(QUrl)
-    def set_icon(self, url):
-        path = url.toLocalFile()
-        shutil.copy2(path, self.current.path / "icon.svg")
-        index = self.index_for_node(self.current)
+    @Slot(QUrl, QModelIndex)
+    def set_icon(self, url, index: QModelIndex):
+        if not index.isValid():
+            return
+
+        node: Node = index.internalPointer()
+
+        path = Path(url.toLocalFile())
+        shutil.copy2(path, node.path / path.name)
+        node.set_icon_name(path.name)
+
         self.dataChanged.emit(index, index, [self.NodeIconRole])
 
     def _add_node(self, parent, name: str = "Untitled", node_type: str = "page"):
