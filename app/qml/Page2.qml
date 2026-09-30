@@ -58,8 +58,6 @@ Rectangle {
       Icon {
         id: edit 
         name: "edit"
-        width: 11
-        height: 11
         onClicked: {
           pageTreeModel.edit()
         }
@@ -68,8 +66,6 @@ Rectangle {
       Icon {
         id: upload
         name: "upload"
-        width: 11
-        height: 11
         onClicked: {
           bar.visible = true
           pageTreeModel.share()

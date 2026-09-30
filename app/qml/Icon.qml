@@ -30,7 +30,7 @@ Item {
         "folder-plus": "folder-plus",
         "more": "ellipsis-vertical",
         "upload": "upload",
-        "edit": "square-pen",
+        "edit": "pencil",
     })
 
     Image {
