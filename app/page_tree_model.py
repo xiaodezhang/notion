@@ -13,6 +13,7 @@ import threading
 from PySide6.QtCore import (
     Property,
     QAbstractItemModel,
+    QFile,
     QModelIndex,
     QTimer,
     Qt,
@@ -28,6 +29,7 @@ import shutil
 import re
 import hashlib
 from loguru import logger
+import frontmatter
 
 from json_helper import write_json
 from nvim import Nvim
@@ -45,7 +47,7 @@ def get_file_hash(file_path):
     return hash_sha256.hexdigest()
 
 
-def get_file_title(file_path):
+def _get_file_title(file_path):
     title = ""
 
     with open(file_path, encoding="utf-8") as f:
@@ -55,6 +57,21 @@ def get_file_title(file_path):
             title = mathches[0]
 
     return title
+
+
+def get_file_title(file_path):
+    post = frontmatter.load(file_path)
+    title = post.get("title", "")
+
+    if not title:
+        return _get_file_title(file_path)
+
+    return title
+
+
+def get_file_tags(file_path):
+    post = frontmatter.load(file_path)
+    return post.get("tags", "")
 
 
 class Node:
@@ -99,7 +116,6 @@ class Node:
 
     def set_icon_name(self, name):
         self._icon_name = name
-
 
     def save(self):
         for c in self.children:
@@ -172,6 +188,11 @@ class PageNode(Node):
 
     @property
     def default_icon(self) -> str:
+        tags = get_file_tags(self.md_file)
+        for tag in tags:
+            tag_icon = f":/icons/{tag}.svg"
+            if QFile.exists(tag_icon):
+                return f"qrc{tag_icon}"
         return "qrc:/icons/file-text.svg"
 
     def build_html(self):
@@ -295,7 +316,7 @@ def _build_node(
     id: str,
     name: str,
     path: Path,
-    icon_name: str|None,
+    icon_name: str | None,
     expanded: bool,
     parent: Node | None = None,
 ):
@@ -438,7 +459,9 @@ class PageTreeModel(QAbstractItemModel):
             if self.current.check_file():
                 self.currentChanged.emit()
                 index = self.index_for_node(self.current)
-                self.dataChanged.emit(index, index, [Qt.ItemDataRole.DisplayRole])
+                self.dataChanged.emit(
+                    index, index, [Qt.ItemDataRole.DisplayRole, self.NodeIconRole]
+                )
 
     def save(self):
         self._root.save()

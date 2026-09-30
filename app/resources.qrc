@@ -24,5 +24,21 @@
         <file>icons/ellipsis-vertical.svg</file>
         <file>icons/upload.svg</file>
         <file>icons/square-pen.svg</file>
+
+        <file>icons/config.svg</file>
+        <file>icons/docs.svg</file>
+        <file>icons/note.svg</file>
+        <file>icons/summary.svg</file>
+        <file>icons/todo.svg</file>
+        <file>icons/cheatsheet.svg</file>
+        <file>icons/diary.svg</file>
+        <file>icons/home.svg</file>
+        <file>icons/english.svg</file>
+        <file>icons/miscellaneous.svg</file>
+        <file>icons/notion.svg</file>
+        <file>icons/photography.svg</file>
+        <file>icons/work.svg</file>
+
+
     </qresource>
 </RCC>
